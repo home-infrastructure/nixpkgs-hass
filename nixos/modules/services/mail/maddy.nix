@@ -13,8 +13,6 @@ let
     # configuration here https://github.com/foxcpp/maddy/blob/master/maddy.conf
     # Do not use this in production!
 
-    tls off
-
     auth.pass_table local_authdb {
       table sql_table {
         driver sqlite3
@@ -44,57 +42,6 @@ let
       }
       default_destination {
         reject 550 5.1.1 "User doesn't exist"
-      }
-    }
-
-    smtp tcp://0.0.0.0:25 {
-      limits {
-        all rate 20 1s
-        all concurrency 10
-      }
-      dmarc yes
-      check {
-        require_mx_record
-        dkim
-        spf
-      }
-      source $(local_domains) {
-        reject 501 5.1.8 "Use Submission for outgoing SMTP"
-      }
-      default_source {
-        destination postmaster $(local_domains) {
-          deliver_to &local_routing
-        }
-        default_destination {
-          reject 550 5.1.1 "User doesn't exist"
-        }
-      }
-    }
-
-    submission tcp://0.0.0.0:587 {
-      limits {
-        all rate 50 1s
-      }
-      auth &local_authdb
-      source $(local_domains) {
-        check {
-            authorize_sender {
-                prepare_email &local_rewrites
-                user_to_email identity
-            }
-        }
-        destination postmaster $(local_domains) {
-            deliver_to &local_routing
-        }
-        default_destination {
-            modify {
-                dkim $(primary_domain) $(local_domains) default
-            }
-            deliver_to &remote_queue
-        }
-      }
-      default_source {
-        reject 501 5.1.8 "Non-local sender domain"
       }
     }
 
@@ -128,12 +75,64 @@ let
         }
       }
     }
+  '';
 
-    imap tcp://0.0.0.0:143 {
-      auth &local_authdb
-      storage &local_mailboxes
+  defaultSubmissionConfig = ''
+    limits {
+      all rate 50 1s
+    }
+    auth &local_authdb
+    source $(local_domains) {
+      check {
+          authorize_sender {
+              prepare_email &local_rewrites
+              user_to_email identity
+          }
+      }
+      destination postmaster $(local_domains) {
+          deliver_to &local_routing
+      }
+      default_destination {
+          modify {
+              dkim $(primary_domain) $(local_domains) default
+          }
+          deliver_to &remote_queue
+      }
+    }
+    default_source {
+      reject 501 5.1.8 "Non-local sender domain"
     }
   '';
+
+  defaultSmtpConfig = ''
+    limits {
+      all rate 20 1s
+      all concurrency 10
+    }
+    dmarc yes
+    check {
+      require_mx_record
+      dkim
+      spf
+    }
+    source $(local_domains) {
+      reject 501 5.1.8 "Use Submission for outgoing SMTP"
+    }
+    default_source {
+      destination postmaster $(local_domains) {
+        deliver_to &local_routing
+      }
+      default_destination {
+        reject 550 5.1.1 "User doesn't exist"
+      }
+    }
+  '';
+
+  defaultImapConfig = ''
+    auth &local_authdb
+    storage &local_mailboxes
+  '';
+
 
 in {
   options = {
@@ -222,10 +221,157 @@ in {
         '';
       };
 
+      tls = {
+        keyPath = mkOption {
+          type = types.nullOr types.path;
+          example = "/etc/ssl/mx1.example.org.key";
+          description = "Path to the private key used for TLS.";
+          default = null;
+        };
+
+        certPath = mkOption {
+          type = types.nullOr types.path;
+          example = "/etc/ssl/mx1.example.org.crt";
+          description = "Path to the certificate used for TLS.";
+          default = null;
+        };
+      };
+
+      imap = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable Imap connection.";
+        };
+
+        listenAddress = mkOption {
+          description = "Imap listening host";
+          default = "0.0.0.0";
+          type = types.str;
+        };
+
+        port = mkOption {
+          type = types.ints.u16;
+          default = 143;
+          description = "Server port to listen for Imap requests.";
+        };
+
+        tlsEnable = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Enable Imap tls connection.";
+        };
+
+        tlsListenAddress = mkOption {
+          description = "TLS Imap listening host";
+          default = "0.0.0.0";
+          type = types.str;
+        };
+
+        tlsPort = mkOption {
+          type = types.ints.u16;
+          default = 993;
+          description = "Server port to listen for Imap tls requests.";
+        };
+
+        config = mkOption {
+          type = with types; nullOr lines;
+          default = defaultImapConfig;
+          description = ''
+            Default Imap config.
+          '';
+        };
+      };
+
+      smtp = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable Smtp connection.";
+        };
+
+        listenAddress = mkOption {
+          description = "Smtp listening host";
+          default = "0.0.0.0";
+          type = types.str;
+        };
+
+        port = mkOption {
+          type = types.ints.u16;
+          default = 25;
+          description = "Server port to listen for Smtp requests.";
+        };
+
+        config = mkOption {
+          type = with types; nullOr lines;
+          default = defaultSmtpConfig;
+          description = ''
+            Default Smtp config.
+          '';
+        };
+      };
+
+      submission = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable Submission connection.";
+        };
+
+        listenAddress = mkOption {
+          description = "Submission listening host";
+          default = "0.0.0.0";
+          type = types.str;
+        };
+
+        port = mkOption {
+          type = types.ints.u16;
+          default = 587;
+          description = "Server port to listen for Submission requests.";
+        };
+
+        tlsEnable = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Enable Submission tls connection.";
+        };
+
+        tlsListenAddress = mkOption {
+          description = "Submission TLS listening host";
+          default = "0.0.0.0";
+          type = types.str;
+        };
+
+        tlsPort = mkOption {
+          type = types.ints.u16;
+          default = 465;
+          description = "Server port to listen for Submission tls requests.";
+        };
+
+        config = mkOption {
+          type = with types; nullOr lines;
+          default = defaultSubmissionConfig;
+          description = ''
+            Default Submission config.
+          '';
+        };
+      };
+
     };
   };
 
   config = mkIf cfg.enable {
+
+    assertions = [{
+      assertion = (cfg.imap.tlsEnable || cfg.submission.tlsEnable) -> (
+        cfg.tls.certPath != null && cfg.tls.keyPath != null
+      );
+      message = ''
+        If maddy is configured to use TLS, tls.certPath and tls.keyPath must be provided.
+        Read more about obtaining TLS certificates here:
+        https://maddy.email/tutorials/setting-up/#tls-certificates
+      '';
+    }];
 
     systemd = {
       packages = [ pkgs.maddy ];
@@ -246,6 +392,31 @@ in {
         $(primary_domain) = ${cfg.primaryDomain}
         $(local_domains) = ${toString cfg.localDomains}
         hostname ${cfg.hostname}
+
+        ${if (cfg.tls.certPath != null && cfg.tls.keyPath != null) then ''
+          tls file ${cfg.tls.certPath} ${cfg.tls.keyPath}
+        '' else ''
+          tls off
+        ''}
+
+        ${optionalString (cfg.smtp.enable) ''
+          smtp tcp://${cfg.smtp.listenAddress}:${toString cfg.smtp.port} {
+            ${cfg.smtp.config}
+          }
+        ''}
+
+        ${optionalString (cfg.imap.enable || cfg.imap.tlsEnable) ''
+          imap ${optionalString (cfg.imap.enable) "tcp://${cfg.imap.listenAddress}:${toString cfg.imap.port}"} ${optionalString (cfg.imap.tlsEnable) "tls://${cfg.imap.tlsListenAddress}:${toString cfg.imap.tlsPort}"} {
+            ${cfg.imap.config}
+          }
+        ''}
+
+        ${optionalString (cfg.submission.enable || cfg.submission.tlsEnable) ''
+          submission ${optionalString (cfg.submission.enable) "tcp://${cfg.submission.listenAddress}:${toString cfg.submission.port}"} ${optionalString (cfg.submission.tlsEnable) "tls://${cfg.submission.tlsListenAddress}:${toString cfg.submission.tlsPort}"} {
+            ${cfg.submission.config}
+          }
+        ''}
+
         ${cfg.config}
       '';
     };
@@ -262,9 +433,13 @@ in {
       ${cfg.group} = { };
     };
 
-    networking.firewall = mkIf cfg.openFirewall {
-      allowedTCPPorts = [ 25 143 587 ];
-    };
+    networking.firewall.allowedTCPPorts = mkMerge [
+      (mkIf cfg.smtp.enable [ cfg.smtp.port ])
+      (mkIf cfg.imap.enable [ cfg.imap.port ])
+      (mkIf cfg.imap.tlsEnable [ cfg.imap.tlsPort ])
+      (mkIf cfg.submission.enable [ cfg.submission.port ])
+      (mkIf cfg.submission.tlsEnable [ cfg.submission.tlsPort ])
+    ];
 
     environment.systemPackages = [
       pkgs.maddy
