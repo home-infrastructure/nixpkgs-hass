@@ -23,6 +23,10 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [
     autoPatchelfHook
+    dpkg
+  ];
+
+  buildInputs = [
     pango
     gtk3
     alsa-lib
@@ -33,17 +37,15 @@ stdenv.mkDerivation rec {
     libxshmfence
   ];
 
-  buildInputs = [ dpkg ];
+  unpackCmd = "${dpkg}/bin/dpkg-deb -x $src debcontents";
 
-  dontUnpack = true;
   dontBuild = true;
   dontStrip = true;
 
   installPhase = ''
-    mkdir -p $out
-    dpkg -x $src $out
-    cp -av $out/opt/BlueMail/* $out/
-    rm -rf $out/opt
+    mkdir -p $out/bin
+    mv opt/BlueMail/* $out
+    ln -s $out/bluemail $out/bin/bluemail
   '';
 
   meta = with lib; {
