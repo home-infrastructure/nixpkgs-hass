@@ -34875,6 +34875,8 @@ with pkgs;
 
   wordpress = callPackage ../servers/web-apps/wordpress { };
 
+  wordpressPackages = recurseIntoAttrs (callPackage ../servers/web-apps/wordpress/packages/default.nix { });
+
   wprecon = callPackage ../tools/security/wprecon { };
 
   wraith = callPackage ../applications/networking/irc/wraith { };
