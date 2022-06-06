@@ -163,6 +163,14 @@ in
         '';
       };
 
+      openFirewall = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Whether to open the firewall for TCP port 631.
+        '';
+      };
+
       bindirCmds = mkOption {
         type = types.lines;
         internal = true;
@@ -452,6 +460,8 @@ in
       '';
 
     security.pam.services.cups = {};
+
+    networking.firewall.allowedTCPPorts = mkIf cfg.openFirewall [ 631 ];
 
   };
 

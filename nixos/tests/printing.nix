@@ -6,6 +6,7 @@ let
     services.printing.enable = true;
     services.printing.startWhenNeeded = startWhenNeeded;
     services.printing.listenAddresses = [ "*:631" ];
+    services.printing.openFirewall = true;
     services.printing.defaultShared = true;
     services.printing.extraConf = ''
       <Location />
@@ -13,7 +14,6 @@ let
         Allow from all
       </Location>
     '';
-    networking.firewall.allowedTCPPorts = [ 631 ];
     # Add a HP Deskjet printer connected via USB to the server.
     hardware.printers.ensurePrinters = [{
       name = "DeskjetLocal";
