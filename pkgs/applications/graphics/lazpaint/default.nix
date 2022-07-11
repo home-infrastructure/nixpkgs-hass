@@ -7,24 +7,24 @@ let
   bgrabitmap = fetchFromGitHub {
     owner = "bgrabitmap";
     repo = "bgrabitmap";
-    rev = "v11.2.5";
-    sha256 = "0w5pdihsxn039kalkf4cx23j69hz5r09qmhd358h2n74irv1r3x1";
+    rev = "v11.5";
+    sha256 = "sha256-Pevh+yhtN3oSSvbQfnO7SM6UHBVe0sSpbK8ss98XqcU=";
   };
   bgracontrols = fetchFromGitHub {
     owner = "bgrabitmap";
     repo = "bgracontrols";
-    rev = "v7.0";
-    sha256 = "0qz3cscrc9jvhrix1hbmzhdxv6mxk0mz9azr46canflsydda8fjy";
+    rev = "v7.5";
+    sha256 = "sha256-iGrj5aiviwr/FK85H8yYyZUrSVMeXkh+U2AgyNndLFw=";
   };
 in stdenv.mkDerivation rec {
   pname = "lazpaint";
-  version = "7.1.5";
+  version = "7.1.6";
 
   src = fetchFromGitHub {
     owner = "bgrabitmap";
     repo = "lazpaint";
     rev = "v${version}";
-    sha256 = "0bpk3rlqzbxvgrxmrzs0hcrgwhsqnpjqv1kdd9cp09knimmksvy5";
+    sha256 = "sha256-DrRcrBm1nmOeACN5zo7KS0cv6+6mYTGUkhEXRKdpZao=";
   };
 
   nativeBuildInputs = [ lazarus fpc makeWrapper ];
@@ -59,10 +59,14 @@ in stdenv.mkDerivation rec {
   '';
 
   meta = with lib; {
+    # Currently broken with latest stable lazarus version
+    # Should work when lazarus >= 2.3 gets released
+    # https://github.com/bgrabitmap/lazpaint/issues/512
+    broken = true;
     description = "Image editor like PaintBrush or Paint.Net";
-    homepage = "https://sourceforge.net/projects/lazpaint/";
+    homepage = "https://lazpaint.github.io";
     license = licenses.gpl3;
     platforms = platforms.linux;
-    maintainers = with maintainers; [ ];
+    maintainers = with maintainers; [ onny ];
   };
 }
