@@ -8,10 +8,14 @@
 , binutils
 , buildBazelPackage
 , buildPythonPackage
+, curl
 , cython
 , fetchFromGitHub
 , git
 , jsoncpp
+, libcxx
+, nsync
+, openssl
 , pybind11
 , setuptools
 , symlinkJoin
@@ -37,7 +41,7 @@
   # CUDA flags:
 , cudaCapabilities ? [ "sm_35" "sm_50" "sm_60" "sm_70" "sm_75" "compute_80" ]
 , cudaSupport ? false
-, cudaPackages ? {}
+, cudaPackages ? { }
 
   # MKL:
 , mklSupport ? true
@@ -48,15 +52,15 @@ let
   inherit (cudaPackages) cudatoolkit cudnn nccl;
 
   pname = "jaxlib";
-  version = "0.3.0";
+  version = "0.3.15";
 
   meta = with lib; {
     description = "JAX is Autograd and XLA, brought together for high-performance machine learning research.";
     homepage = "https://github.com/google/jax";
     license = licenses.asl20;
     maintainers = with maintainers; [ ndl ];
-    platforms = [ "x86_64-linux" "aarch64-darwin" "x86_64-darwin"];
-    hydraPlatforms = ["x86_64-linux" ]; # Don't think anybody is checking the darwin builds
+    platforms = [ "x86_64-linux" "aarch64-darwin" "x86_64-darwin" ];
+    hydraPlatforms = [ "x86_64-linux" ]; # Don't think anybody is checking the darwin builds
   };
 
   cudatoolkit_joined = symlinkJoin {
@@ -79,7 +83,50 @@ let
     ];
   };
 
-  bazel-build = buildBazelPackage {
+  llvm-raw_darwin_patched = stdenv.mkDerivation {
+    name = "llvm-raw-${pname}-${version}";
+
+    src = _bazel-build.deps;
+
+    prePatch = "pushd llvm-raw";
+    patches = [
+      # Fix a vendored config.h that requires the 10.13 SDK
+      ./llvm_bazel_fix_macos_10_12_sdk.patch
+    ];
+    postPatch = ''
+      touch {BUILD,WORKSPACE}
+      popd
+    '';
+
+    dontConfigure = true;
+    dontBuild = true;
+
+    installPhase = ''
+      runHook preInstall
+
+      mv llvm-raw/ "$out"
+
+      runHook postInstall
+    '';
+  };
+  bazel-build = if stdenv.isDarwin then _bazel-build.overrideAttrs (prev: {
+    bazelBuildFlags = prev.bazelBuildFlags ++ [
+      # "--override_repository=rules_cc=${rules_cc_darwin_patched}"
+
+      # Fixes error: no member named 'futimens' in the global namespace
+      "--override_repository=llvm-raw=${llvm-raw_darwin_patched}"
+    ];
+    # preBuild = ''
+    #   export AR="${cctools}/bin/libtool"
+    # '';
+  }) else _bazel-build;
+
+  _bazel-build = (buildBazelPackage.override (lib.optionalAttrs stdenv.isDarwin {
+    # clang 7 fails to emit a symbol for
+    # __ZN4llvm11SmallPtrSetIPKNS_10AllocaInstELj8EED1Ev in any of the
+    # translation units, so the build fails at link time
+    # stdenv = llvmPackages_11.stdenv;
+  })) {
     name = "bazel-build-${pname}-${version}";
 
     bazel = bazel_5;
@@ -88,7 +135,7 @@ let
       owner = "google";
       repo = "jax";
       rev = "${pname}-v${version}";
-      sha256 = "0ndpngx5k6lf6jqjck82bbp0gs943z0wh7vs9gwbyk2bw0da7w72";
+      sha256 = "sha256-pIl7zzl82w5HHnJadH2vtCT4mYFd5YmM9iHC2GoJD6s=";
     };
 
     nativeBuildInputs = [
@@ -101,12 +148,14 @@ let
     ];
 
     buildInputs = [
+      curl
       double-conversion
       giflib
       grpc
       jsoncpp
       libjpeg_turbo
       numpy
+      openssl
       pkgs.flatbuffers
       pkgs.protobuf
       pybind11
@@ -117,6 +166,8 @@ let
     ] ++ lib.optionals cudaSupport [
       cudatoolkit
       cudnn
+    ] ++ lib.optionals (!stdenv.isDarwin) [
+      nsync
     ];
 
     postPatch = ''
@@ -129,6 +180,7 @@ let
 
     GCC_HOST_COMPILER_PREFIX = lib.optionalString cudaSupport "${cudatoolkit_cc_joined}/bin";
     GCC_HOST_COMPILER_PATH = lib.optionalString cudaSupport "${cudatoolkit_cc_joined}/bin/gcc";
+    NIX_CFLAGS_COMPILE = lib.optionalString stdenv.isDarwin "-I${lib.getDev libcxx}/include/c++/v1";
 
     preConfigure = ''
       # dummy ldconfig
@@ -156,7 +208,7 @@ let
     # Copy-paste from TF derivation.
     # Most of these are not really used in jaxlib compilation but it's simpler to keep it
     # 'as is' so that it's more compatible with TF derivation.
-    TF_SYSTEM_LIBS = lib.concatStringsSep "," [
+    TF_SYSTEM_LIBS = lib.concatStringsSep "," ([
       "absl_py"
       "astor_archive"
       "astunparse_archive"
@@ -165,14 +217,14 @@ let
       # "com_github_googleapis_googleapis"
       # "com_github_googlecloudplatform_google_cloud_cpp"
       "com_github_grpc_grpc"
-      "com_google_protobuf"
+      # Fails with the error: /build/output/external/com_google_protobuf/BUILD.bazel:50:8: in cmd attribute of genrule rule @com_google_protobuf//:link_proto_files: $(PROTOBUF_INCLUDE_PATH) not defined
+      # "com_google_protobuf"
       # Fails with the error: external/org_tensorflow/tensorflow/core/profiler/utils/tf_op_utils.cc:46:49: error: no matching function for call to 're2::RE2::FullMatch(absl::lts_2020_02_25::string_view&, re2::RE2&)'
       # "com_googlesource_code_re2"
       "curl"
       "cython"
       "dill_archive"
       "double_conversion"
-      "enum34_archive"
       "flatbuffers"
       "functools32_archive"
       "gast_archive"
@@ -183,11 +235,9 @@ let
       "libjpeg_turbo"
       "lmdb"
       "nasm"
-      # "nsync" # not packaged in nixpkgs
       "opt_einsum_archive"
       "org_sqlite"
       "pasta"
-      "pcre"
       "png"
       "pybind11"
       "six_archive"
@@ -197,11 +247,13 @@ let
       "typing_extensions_archive"
       "wrapt"
       "zlib"
-    ];
+    ] ++ lib.optionals (!stdenv.isDarwin) [
+      "nsync" # fails to build on darwin
+    ]);
 
     # Make sure Bazel knows about our configuration flags during fetching so that the
     # relevant dependencies can be downloaded.
-    bazelFetchFlags = bazel-build.bazelBuildFlags;
+    bazelFetchFlags = _bazel-build.bazelBuildFlags;
 
     bazelBuildFlags = [
       "-c opt"
@@ -211,14 +263,20 @@ let
       "--config=cuda"
     ] ++ lib.optional mklSupport [
       "--config=mkl_open_source_only"
+    ] ++ lib.optionals stdenv.cc.isClang [
+      # workaround for https://github.com/bazelbuild/bazel/issues/15359
+      "--spawn_strategy=sandboxed"
     ];
 
     fetchAttrs = {
       sha256 =
         if cudaSupport then
-          "sha256-Ald+vplRx/DDG/7TfHAqD4Gktb1BGnf7FSCCJzSI0eo="
+          "sha256-FOQT6w7wmS/4lIs1EZIAyycF0HRdbcg/w/34esxUKyw="
         else
-          "sha256-6acSbBNcUBw177HMVOmpV7pUfP1aFSe5cP6/zWFdGFo=";
+          if stdenv.isDarwin then
+            "sha256-GKhsnIMX5pUwDb2cFue0GMGHh0HLcfDk6Iy9DOTfEnY="
+          else
+            "sha256-MSQ4rwGVuekvH3ZjWlkLW041UkfTKtoXtQnSyXlWCes=";
     };
 
     buildAttrs = {
@@ -229,17 +287,12 @@ let
       # 2) Force static protobuf linkage to prevent crashes on loading multiple extensions
       #    in the same python program due to duplicate protobuf DBs.
       # 3) Patch python path in the compiler driver.
-      # 4) Patch tensorflow sources to work with later versions of protobuf. See
-      #    https://github.com/google/jax/issues/9534. Note that this should be
-      #    removed on the next release after 0.3.0.
       preBuild = ''
-        for src in ./jaxlib/*.{cc,h}; do
+        for src in ./jaxlib/*.{cc,h} ./jaxlib/cuda/*.{cc,h}; do
           sed -i 's@include/pybind11@pybind11@g' $src
         done
         sed -i 's@-lprotobuf@-l:libprotobuf.a@' ../output/external/org_tensorflow/third_party/systemlibs/protobuf.BUILD
         sed -i 's@-lprotoc@-l:libprotoc.a@' ../output/external/org_tensorflow/third_party/systemlibs/protobuf.BUILD
-        substituteInPlace ../output/external/org_tensorflow/tensorflow/compiler/xla/python/pprof_profile_builder.cc \
-          --replace "status.message()" "std::string{status.message()}"
       '' + lib.optionalString cudaSupport ''
         patchShebangs ../output/external/org_tensorflow/third_party/gpus/crosstool/clang/bin/crosstool_wrapper_driver_is_not_gcc.tpl
       '';
@@ -257,7 +310,7 @@ buildPythonPackage {
   inherit meta pname version;
   format = "wheel";
 
-  src = "${bazel-build}/jaxlib-${version}-cp${builtins.replaceStrings ["."] [""] python.pythonVersion}-none-manylinux2010_${stdenv.targetPlatform.linuxArch}.whl";
+  src = "${bazel-build}/jaxlib-${version}-cp${builtins.replaceStrings ["."] [""] python.pythonVersion}-none-manylinux2014_${stdenv.targetPlatform.linuxArch}.whl";
 
   # Note that cudatoolkit is necessary since jaxlib looks for "ptxas" in $PATH.
   # See https://github.com/NixOS/nixpkgs/pull/164176#discussion_r828801621 for
@@ -276,6 +329,7 @@ buildPythonPackage {
 
   propagatedBuildInputs = [
     absl-py
+    curl
     double-conversion
     flatbuffers
     giflib
