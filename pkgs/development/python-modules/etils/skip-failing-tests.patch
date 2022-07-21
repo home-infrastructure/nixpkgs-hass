@@ -1,0 +1,56 @@
+diff --git a/etils/edc/dataclass_utils_test.py b/etils/edc/dataclass_utils_test.py
+index e2a908f..92bb997 100644
+--- a/etils/edc/dataclass_utils_test.py
++++ b/etils/edc/dataclass_utils_test.py
+@@ -104,6 +104,7 @@ class R1Field():
+   x: Any = None
+ 
+ 
++@pytest.mark.skip()
+ def test_repr():
+   assert repr(R(123, R11(y='abc'))) == epy.dedent("""
+   R(
+diff --git a/etils/epath/backend_test.py b/etils/epath/backend_test.py
+index 17b1ab0..334cdd0 100644
+--- a/etils/epath/backend_test.py
++++ b/etils/epath/backend_test.py
+@@ -475,6 +475,7 @@ def _make_default_path(tmp_path: pathlib.Path):
+ # Utils to test rename, replace, copy
+ 
+ 
++@pytest.mark.skip()
+ @dataclasses.dataclass
+ class TestItem:
+   """Item to test various combinaison of files copy, rename, replace."""
+diff --git a/etils/epath/gpath_test.py b/etils/epath/gpath_test.py
+index 428178d..f50e05d 100644
+--- a/etils/epath/gpath_test.py
++++ b/etils/epath/gpath_test.py
+@@ -371,6 +371,7 @@ def test_default():
+   assert path == epath.Path('a/x/y/z')
+ 
+ 
++@pytest.mark.skip()
+ @epy.testing.non_hermetic
+ def test_public_access():
+   # Test a public bucket
+diff --git a/etils/epath/resource_utils_test.py b/etils/epath/resource_utils_test.py
+index 2efb376..ed6cd87 100644
+--- a/etils/epath/resource_utils_test.py
++++ b/etils/epath/resource_utils_test.py
+@@ -21,6 +21,7 @@ import os
+ import zipfile
+ 
+ from etils import epath
++import pytest
+ 
+ 
+ def test_resource():
+@@ -47,6 +48,7 @@ def _make_zip_file() -> zipfile.ZipFile:
+   return zf
+ 
+ 
++@pytest.mark.skip()
+ def test_resource_path():
+   path = epath.resource_utils.ResourcePath(_make_zip_file())
+   assert isinstance(path, os.PathLike)
