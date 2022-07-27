@@ -30,6 +30,8 @@ buildPythonPackage rec {
     pytestCheckHook
   ];
 
+  pythonImportsCheck = [ "dparse" ];
+
   meta = with lib; {
     description = "A parser for Python dependency files";
     homepage = "https://github.com/pyupio/dparse";
