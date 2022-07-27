@@ -6,6 +6,7 @@
 , pyyaml
 , packaging
 , pytestCheckHook
+, pipenv
 }:
 
 buildPythonPackage rec {
@@ -29,12 +30,8 @@ buildPythonPackage rec {
   ];
 
   checkInputs = [
+    pipenv
     pytestCheckHook
-  ];
-
-  disabledTestPaths = [
-    # Requries pipenv
-    "tests/test_parse.py"
   ];
 
   pythonImportsCheck = [
