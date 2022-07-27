@@ -6,6 +6,7 @@
 , pyyaml
 , packaging
 , pytestCheckHook
+, pipenv
 }:
 
 buildPythonPackage rec {
@@ -25,12 +26,8 @@ buildPythonPackage rec {
   ];
 
   checkInputs = [
+    pipenv
     pytestCheckHook
-  ];
-
-  disabledTests = [
-    # requires unpackaged dependency pipenv
-    "test_update_pipfile"
   ];
 
   meta = with lib; {
