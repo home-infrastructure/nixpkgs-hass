@@ -14,6 +14,7 @@
 , rich
 , tensorflow
 , treeo
+, torchmetrics
 }:
 
 buildPythonPackage rec {
@@ -59,16 +60,11 @@ buildPythonPackage rec {
     keras
     pytestCheckHook
     tensorflow
+    torchmetrics
   ];
 
   pythonImportsCheck = [
     "treex"
-  ];
-
-  disabledTestPaths = [
-    # Require `torchmetrics` which is not packaged in `nixpkgs`.
-    "tests/metrics/test_mean_absolute_error.py"
-    "tests/metrics/test_mean_square_error.py"
   ];
 
   meta = with lib; {
