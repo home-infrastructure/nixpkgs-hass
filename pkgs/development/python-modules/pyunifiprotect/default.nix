@@ -22,6 +22,7 @@
 , pytz
 , termcolor
 , typer
+, ffprobe-python
 }:
 
 buildPythonPackage rec {
@@ -37,6 +38,11 @@ buildPythonPackage rec {
     rev = "refs/tags/v${version}";
     hash = "sha256-81nottXXenkIPiDnR8O44ELStoh8i2yROYCPvBLiWSU=";
   };
+
+  postPatch = ''
+    substituteInPlace pyproject.toml \
+      --replace "--cov=pyunifiprotect --cov-append" ""
+  '';
 
   propagatedBuildInputs = [
     aiofiles
@@ -60,6 +66,7 @@ buildPythonPackage rec {
   };
 
   checkInputs = [
+    ffprobe-python
     pytest-aiohttp
     pytest-asyncio
     pytest-benchmark
@@ -68,22 +75,12 @@ buildPythonPackage rec {
     pytestCheckHook
   ];
 
-  postPatch = ''
-    substituteInPlace pyproject.toml \
-      --replace "--cov=pyunifiprotect --cov-append" ""
-  '';
-
   pythonImportsCheck = [
     "pyunifiprotect"
   ];
 
   pytestFlagsArray = [
     "--benchmark-disable"
-  ];
-
-  disabledTests = [
-    # Tests require ffprobe
-    "test_get_camera_video"
   ];
 
   meta = with lib; {
