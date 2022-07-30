@@ -8910,11 +8910,7 @@ in {
 
   pyunifi = callPackage ../development/python-modules/pyunifi { };
 
-  pyunifiprotect = callPackage ../development/python-modules/pyunifiprotect {
-    # pydantic pinned to version 1.9.0 because of bug introduced in 1.9.1
-    # https://github.com/samuelcolvin/pydantic/issues/4092
-    pydantic = self.pydantic_190;
-  };
+  pyunifiprotect = callPackage ../development/python-modules/pyunifiprotect { };
 
   pyupdate = callPackage ../development/python-modules/pyupdate { };
 

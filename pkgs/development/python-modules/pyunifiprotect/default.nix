@@ -9,7 +9,9 @@
 , packaging
 , pillow
 , poetry-core
-, pydantic
+# pydantic pinned to version 1.9.0 because of bug introduced in 1.9.1
+# https://github.com/samuelcolvin/pydantic/issues/4092
+, pydantic_190
 , pyjwt
 , pytest-aiohttp
 , pytest-asyncio
@@ -51,7 +53,7 @@ buildPythonPackage rec {
     orjson
     packaging
     pillow
-    pydantic
+    pydantic_190
     pyjwt
     pytz
     typer
