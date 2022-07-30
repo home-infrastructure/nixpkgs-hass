@@ -7309,6 +7309,10 @@ in {
 
   pydantic = callPackage ../development/python-modules/pydantic { };
 
+  # pinned version required by pyunifiprotect
+  # https://github.com/samuelcolvin/pydantic/issues/4092
+  pydantic_190 = callPackage ../development/python-modules/pydantic/190.nix { };
+
   pydash = callPackage ../development/python-modules/pydash { };
 
   pydata-sphinx-theme = callPackage ../development/python-modules/pydata-sphinx-theme { };
@@ -8906,7 +8910,11 @@ in {
 
   pyunifi = callPackage ../development/python-modules/pyunifi { };
 
-  pyunifiprotect = callPackage ../development/python-modules/pyunifiprotect { };
+  pyunifiprotect = callPackage ../development/python-modules/pyunifiprotect {
+    # pydantic pinned to version 1.9.0 because of bug introduced in 1.9.1
+    # https://github.com/samuelcolvin/pydantic/issues/4092
+    pydantic = self.pydantic_190;
+  };
 
   pyupdate = callPackage ../development/python-modules/pyupdate { };
 
