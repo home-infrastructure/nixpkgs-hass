@@ -15,6 +15,9 @@
 , astor
 , numpy
 , asyncstdlib
+, fetchpatch
+, deal
+, pythonAtLeast
 }:
 
 buildPythonPackage rec {
@@ -30,6 +33,16 @@ buildPythonPackage rec {
     hash = "sha256-QyuegyjVyRLQS0DjBJXpTDNeBM7LigGJ5cztVOO7e3Y=";
   };
 
+  patches = [
+    # fix needs an old version of deal to comply with the tests
+    # see https://github.com/Parquery/icontract/issues/244
+    (fetchpatch {
+      url = "https://github.com/Parquery/icontract/commit/7cfdba4116cf2faa9f86c626023c886aee292312.patch";
+      sha256 = "sha256-r6yst4zWCjg1FVlLV5xOnMuuBobspE6igQjuzToKEfI=";
+      name = "fix_test_dependency_deal.patch";
+    })
+  ];
+
   preCheck = ''
     # we don't want to use the precommit.py script to build the package.
     # For the tests to succeed, "ICONTRACT_SLOW" needs to be set.
@@ -44,26 +57,29 @@ buildPythonPackage rec {
   ];
 
   checkInputs = [
-    pytestCheckHook
-    yapf
-    docutils
-    pygments
-    dpcontracts
-    tabulate
-    py-cpuinfo
-    typeguard
     astor
-    numpy
     asyncstdlib
+    docutils
+    dpcontracts
+    numpy
+    pytestCheckHook
+    py-cpuinfo
+    pygments
+    tabulate
+    typeguard
+    yapf
+  ] ++ lib.optionals (pythonOlder "3.10") [
+    deal
   ];
 
   disabledTestPaths = [
-    # needs an old version of deal to comply with the tests
-    # see https://github.com/Parquery/icontract/issues/244
-    "tests_with_others/test_deal.py"
     # mypy decorator checks don't pass. For some reaseon mypy
     # doesn't check the python file provided in the test.
     "tests/test_mypy_decorators.py"
+  ] ++ lib.optionals (pythonAtLeast "3.10") [
+    # test requires deal which is not compatible with python 3.10 due to
+    # pyschemes dependency
+    "tests_with_others/test_deal.py"
   ];
 
   pythonImportsCheck = [ "icontract" ];
