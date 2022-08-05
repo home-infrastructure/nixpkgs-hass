@@ -11,5 +11,5 @@ buildPythonPackage rec {
 
   doCheck = false;
 
-  nativeBuildInputs = [ ffmpeg_5-full ];
+  propagatedBuildInputs = [ ffmpeg_5-full ];
 }
