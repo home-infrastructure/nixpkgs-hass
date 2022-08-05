@@ -1,4 +1,4 @@
-{ buildPythonPackage, fetchPypi, lib, stdenv }:
+{ buildPythonPackage, fetchPypi, ffmpeg-5_full, lib, stdenv }:
 
 buildPythonPackage rec {
   pname = "ffprobe-python";
@@ -10,4 +10,6 @@ buildPythonPackage rec {
   };
 
   doCheck = false;
+
+  nativeBuildInputs = [ ffmpeg-5_full ];
 }
