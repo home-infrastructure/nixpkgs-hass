@@ -38,7 +38,7 @@ buildPythonPackage rec {
     owner = "briis";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-xbODjgJHd1e3NdnoB/srlOdeuhOj2JeN8b8MQh3D4+x=";
+    hash = "sha256-+THo4obW+bhW66ACQdO/5jBGiPktuTRoye4HrkdxSdc=";
   };
 
   postPatch = ''
