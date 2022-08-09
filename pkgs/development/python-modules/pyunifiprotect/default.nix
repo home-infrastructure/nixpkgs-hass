@@ -29,7 +29,7 @@
 
 buildPythonPackage rec {
   pname = "pyunifiprotect";
-  version = "4.0.13";
+  version = "4.0.12";
   format = "pyproject";
 
   disabled = pythonOlder "3.9";
