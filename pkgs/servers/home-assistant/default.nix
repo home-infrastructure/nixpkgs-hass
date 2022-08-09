@@ -217,6 +217,7 @@ in python.pkgs.buildPythonApplication rec {
       ffmpeg = "${lib.getBin ffmpeg}/bin/ffmpeg";
     })
     ./patches/wilight-import.patch
+    ./patches/update-pyunifiprotect.patch
   ];
 
   postPatch = let

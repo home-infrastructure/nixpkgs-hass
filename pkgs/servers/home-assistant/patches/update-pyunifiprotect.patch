@@ -1,0 +1,39 @@
+diff --git a/homeassistant/components/unifiprotect/manifest.json b/homeassistant/components/unifiprotect/manifest.json
+index 815b5250e1dcc..ad18be3dba94a 100644
+--- a/homeassistant/components/unifiprotect/manifest.json
++++ b/homeassistant/components/unifiprotect/manifest.json
+@@ -3,7 +3,7 @@
+   "name": "UniFi Protect",
+   "config_flow": true,
+   "documentation": "https://www.home-assistant.io/integrations/unifiprotect",
+-  "requirements": ["pyunifiprotect==4.0.10", "unifi-discovery==1.1.4"],
++  "requirements": ["pyunifiprotect==4.0.12", "unifi-discovery==1.1.4"],
+   "dependencies": ["http"],
+   "codeowners": ["@briis", "@AngellusMortis", "@bdraco"],
+   "quality_scale": "platinum",
+diff --git a/requirements_all.txt b/requirements_all.txt
+index 6564512a49436..7d67df172ede8 100644
+--- a/requirements_all.txt
++++ b/requirements_all.txt
+@@ -2010,7 +2010,7 @@ pytrafikverket==0.2.0.1
+ pyudev==0.23.2
+ 
+ # homeassistant.components.unifiprotect
+-pyunifiprotect==4.0.10
++pyunifiprotect==4.0.12
+ 
+ # homeassistant.components.uptimerobot
+ pyuptimerobot==22.2.0
+diff --git a/requirements_test_all.txt b/requirements_test_all.txt
+index d28ad4ac97f63..c9c6ec040518b 100644
+--- a/requirements_test_all.txt
++++ b/requirements_test_all.txt
+@@ -1364,7 +1364,7 @@ pytrafikverket==0.2.0.1
+ pyudev==0.23.2
+ 
+ # homeassistant.components.unifiprotect
+-pyunifiprotect==4.0.10
++pyunifiprotect==4.0.12
+ 
+ # homeassistant.components.uptimerobot
+ pyuptimerobot==22.2.0
